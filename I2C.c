@@ -137,3 +137,37 @@ int I2CReadRegister(char regAddr, char* rxData, char slaveAddr) {
     
     return result;
 }
+
+int I2CWriteBytes(char regAddr, char* txData, int len, char slaveAddr) {
+    int result = 1;
+    char flag = 0;
+    char i = 0, j = 0;
+    
+    for(i = 0; i < 100; ++i) {
+        I2CStart();
+        I2CSendByte((slaveAddr << 1) | 0);
+        I2CIdle();
+        if(I2C2STATbits.ACKSTAT == 0) {
+            flag = 1;
+            break;
+        }
+    }
+    if(flag == 0) {
+        return 0;
+    }
+    flag = 0;
+    I2CSendByte(regAddr);
+    I2CIdle();
+    
+    for(j = 0; j < len; ++j) {
+        if(I2C2STATbits.ACKSTAT == 0) {
+            I2CSendByte(*(txData + j));
+        }
+        else {
+            return 0;
+        }
+    }
+    I2CStop();
+    
+    return result;
+}

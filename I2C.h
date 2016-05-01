@@ -9,6 +9,7 @@ int I2CStop(void);
 int I2CWriteByte(char slaveAddr, char dataAddr, char data);
 int I2CSendByte(char data);
 int I2CReadRegister(char regAddr, char* rxData, char slaveAddr);
+int I2CWriteBytes(char regAddr, char* txData, int len, char slaveAddr);
 
 
 #endif

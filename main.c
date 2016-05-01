@@ -39,6 +39,7 @@ int main(void)
     state_t direction = FORWARD;
     int voltageADC = 0;
     char I2Cdata = 0;
+    char I2Ctemp = 0;
     int num = 0;
     int lastVoltage = 0;
     char charToWrite = 0;
@@ -62,16 +63,22 @@ int main(void)
     {
         switch(myState) {
             case INIT:
-                if(I2CReadRegister(0x0F, &I2Cdata, 0x1E) == 1) {
-                    myState = PRINT_LCD;
+                if(I2CReadRegister(0x20, &I2Cdata, 0x1E) == 1) {
+                    //myState = PRINT_LCD;
+                    I2Cdata = 0b01100000;
+                    if(I2CWriteBytes(0x20, &I2Cdata, 1, 0x1E) == 1) {
+                        if(I2CReadRegister(0x20, &I2Ctemp, 0x1E) == 1) {
+                            myState = PRINT_LCD;
+                        }
+                    }
                 }
                 else {
                     myState = INIT;
                 };
                 break;
             case PRINT_LCD:
-                num = ((int)I2Cdata)&(0x000000FF);
-                itoa(numberToPrint, num, 10);
+                num = ((int)I2Ctemp)&(0x000000FF);
+                itoa(numberToPrint, num, 16);
                 clearLCD();
                 delayUs(10000);
                 moveCursorLCD(0, 5);
