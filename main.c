@@ -21,7 +21,7 @@
 #include "ADC.h"
 #include "PWM.h"
 #include "control.h"
-
+#include "I2C.h"
 
 typedef enum state_enum {
     INIT, TOP, RIGHT, MIDDLE, LEFT, SET_DIRECTION, PRINT_LCD, FORWARD, RESUME
@@ -38,13 +38,15 @@ int main(void)
 {
     state_t direction = FORWARD;
     int voltageADC = 0;
+    char I2Cdata = 0;
+    int num = 0;
     int lastVoltage = 0;
     char charToWrite = 0;
     char numberToPrint[5] = {' ', ' ',  ' ',  ' ',  '\0'};
     char sensors = 0b00000001;
     SYSTEMConfigPerformance(10000000);
     enableInterrupts();
-    myState = MIDDLE;
+    myState = INIT;
     initButton();
     initLEDs();
     initTimers();
@@ -52,6 +54,7 @@ int main(void)
     initKeypad();
     initPWM();
     initADC();
+    initI2C();
     
     //format 0b0000[Right][Top][Left][Middle]
     
@@ -59,80 +62,16 @@ int main(void)
     {
         switch(myState) {
             case INIT:
-                sensors = 0b00000100;
-                myState = TOP;
-                break;
-            case RIGHT:
-                voltageADC = testSensor(0b00001000);
-                if(myState != SET_DIRECTION) {
+                if(I2CReadRegister(0x0F, &I2Cdata, 0x1E) == 1) {
                     myState = PRINT_LCD;
                 }
-                break;
-            case TOP:
-                voltageADC = testSensor(0b00000100);
-                if(myState != SET_DIRECTION) {
-                    myState = PRINT_LCD;
-                }
-                break;
-            case LEFT:
-                voltageADC = testSensor(0b00000010);
-                if(myState != SET_DIRECTION) {
-                    myState = PRINT_LCD;
-                }
-                break;
-            case MIDDLE:
-                voltageADC = testSensor(0b00000001);
-                if(myState != SET_DIRECTION) {
-                    myState = PRINT_LCD;
-                }
-                break;
-            case SET_DIRECTION:
-                switch(sensors) {
-                        case 0b00001000:
-                            sensors = 0b00000100;
-                            myState = TOP;
-                            break;
-                        case 0b00000100:
-                            sensors = 0b00000010;
-                            myState = LEFT;
-                            break;
-                        case 0b00000010:
-                            sensors = 0b00000001;
-                            myState = MIDDLE;
-                            break;
-                        case 0b00000001:
-                            sensors = 0b00001000;
-                            myState = RIGHT;
-                            break;
-                        default:
-                            myState = INIT;
-                            break;
-                }
-                
-                break;
-            case RESUME:
-                if(myState != SET_DIRECTION) {
-                    switch(sensors) {
-                        case 0b00001000:
-                            myState = RIGHT;
-                            break;
-                        case 0b00000100:
-                            myState = TOP;
-                            break;
-                        case 0b00000010:
-                            myState = LEFT;
-                            break;
-                        case 0b00000001:
-                            myState = MIDDLE;
-                            break;
-                        default:
-                            myState = INIT;
-                            break;
-                    }
-                }
+                else {
+                    myState = INIT;
+                };
                 break;
             case PRINT_LCD:
-                itoa(numberToPrint, voltageADC, 10);
+                num = ((int)I2Cdata)&(0x000000FF);
+                itoa(numberToPrint, num, 10);
                 clearLCD();
                 delayUs(10000);
                 moveCursorLCD(0, 5);
@@ -141,6 +80,10 @@ int main(void)
                 if(myState != SET_DIRECTION) {
                     myState = RESUME;
                 }
+                myState = RESUME;
+                break;
+            case RESUME:
+                while(1);
                 break;
         }
     }
