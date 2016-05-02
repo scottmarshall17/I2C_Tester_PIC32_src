@@ -21,5 +21,12 @@ int MAG_XY_AxOperativeMode(MAG_OMXY_t val);
 int MAG_Z_AxOperativeMode(MAG_OMZ_t val);
 int MAG_SetMode(MAG_MD_t val);
 int MAG_TemperatureEN(MAG_TEMP_EN_t val);
+int ACC_SetFullScale(ACC_FS_t val);
+int ACC_BlockDataUpdate(ACC_BDU_t val);
+int ACC_EnableAxis(char val);
+int ACC_SetODR(ACC_ODR_t val);
+int initACC(ACC_FS_t afs, ACC_BDU_t abu, char aea, ACC_ODR_t aodr);
+int ACC_readZ(int* data);
+int ACC_Status_Flags(char* val);
 
 #endif

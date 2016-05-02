@@ -406,3 +406,258 @@ int initMAG(MAG_DO_t modr, MAG_FS_t mfs,
     
     return result;
 }
+
+int MAG_readX(int* data) {
+    int result = 1;
+    char data_L = 0;
+    char data_H = 0;
+    MAG_XYZDA_t flag = MAG_XYZDA_NO;
+    *data = 0;
+    
+    if(MAG_XYZ_AxDataAvailable(&flag)) {
+        if(flag & MAG_XYZDA_YES) {
+            if(I2CReadRegister(MAG_OUTX_L, &data_L, MAG_I2C_ADDR) != 1) {
+                return 0;
+            }
+            if(I2CReadRegister(MAG_OUTX_H, &data_H, MAG_I2C_ADDR) != 1) {
+                return 0;
+            }
+            *data = (int)((data_H << 8) | data_L);
+        }
+        else {
+            return 0;
+        }
+    }
+    else {
+        result = 0;;
+    }
+    
+    return result;
+}
+
+int MAG_XYZ_AxDataAvailable(MAG_XYZDA_t* value) {
+    int result = 1;
+    char data = 0;
+    if(I2CReadRegister(MAG_STATUS_REG, &data, MAG_I2C_ADDR ) == 1) {
+        *value = (MAG_XYZDA_t)((char)(data) & (char)MAG_XYZDA_YES);
+    }
+    else {
+        *value = MAG_XYZDA_NO;
+        return 0;
+    }
+    return result;
+}
+
+int MAG_readZ(int* data) {
+    int result = 1;
+    char data_L = 0;
+    char data_H = 0;
+    MAG_XYZDA_t flag = MAG_XYZDA_NO;
+    *data = 0;
+    
+    if(MAG_XYZ_AxDataAvailable(&flag)) {
+        if(flag & MAG_XYZDA_YES) {
+            if(I2CReadRegister(MAG_OUTZ_L, &data_L, MAG_I2C_ADDR) != 1) {
+                return 0;
+            }
+            if(I2CReadRegister(MAG_OUTZ_H, &data_H, MAG_I2C_ADDR) != 1) {
+                return 0;
+            }
+            *data = (int)((data_H << 8) | data_L);
+        }
+        else {
+            return 0;
+        }
+    }
+    else {
+        result = 0;;
+    }
+    
+    return result;
+}
+
+int ACC_SetFullScale(ACC_FS_t val) {
+    int result = 1;
+    ACC_REG_t configReg = ACC_CTRL4;
+    char data = 0;
+    if(I2CReadRegister(configReg, &data, ACC_I2C_ADDR) == 1) {
+        data &= ~ACC_FS_8g;
+        data |= val;
+        if(I2CWriteBytes(configReg, &data, 1, ACC_I2C_ADDR) == 1) {
+            result = 1;
+        }
+        else {
+            return 0;
+        }
+    }
+    
+    return result;
+}
+int ACC_BlockDataUpdate(ACC_BDU_t val) {
+    int result = 1;
+    ACC_REG_t configReg = ACC_CTRL1;
+    char data = 0;
+    if(I2CReadRegister(configReg, &data, ACC_I2C_ADDR) == 1) {
+        data &= ~ACC_BDU_ENABLE;
+        data |= val;
+        if(I2CWriteBytes(configReg, &data, 1, ACC_I2C_ADDR) == 1) {
+            result = 1;
+        }
+        else {
+            return 0;
+        }
+    }
+    
+    return result;
+}
+int ACC_EnableAxis(char val) {
+    int result = 1;
+    ACC_REG_t configReg = ACC_CTRL1;
+    char data = 0;
+    if(I2CReadRegister(configReg, &data, ACC_I2C_ADDR) == 1) {
+        data &= ~0x07;
+        data |= val;
+        if(I2CWriteBytes(configReg, &data, 1, ACC_I2C_ADDR) == 1) {
+            result = 1;
+        }
+        else {
+            return 0;
+        }
+    }
+    
+    return result;
+}
+int ACC_SetODR(ACC_ODR_t val) {
+    int result = 1;
+    ACC_REG_t configReg = ACC_CTRL1;
+    char data = 0;
+    if(I2CReadRegister(configReg, &data, ACC_I2C_ADDR) == 1) {
+        data &= ~ACC_ODR_MASK;
+        data |= val;
+        if(I2CWriteBytes(configReg, &data, 1, ACC_I2C_ADDR) == 1) {
+            result = 1;
+        }
+        else {
+            return 0;
+        }
+    }
+    
+    return result;
+}
+
+int initACC(ACC_FS_t afs, ACC_BDU_t abu, char aea, ACC_ODR_t aodr) {
+    int result = 1;
+    ACC_SetFullScale(afs);
+    ACC_BlockDataUpdate(abu);
+    ACC_EnableAxis(aea);
+    ACC_SetODR(aodr);
+    return result;
+}
+
+int startBreakout(void) {
+    int result = 1;
+    initMAG(///// Magnetometer output data rate options
+                  //MAG_DO_0_625_Hz,
+                  //MAG_DO_1_25_Hz,
+                  //MAG_DO_2_5_Hz,
+                  //MAG_DO_5_Hz,
+                  //MAG_DO_10_Hz,
+                  //MAG_DO_20_Hz,
+                  //MAG_DO_40_Hz,
+                  MAG_DO_80_Hz,
+
+                ///// Magnetic field full scale options
+                  //MAG_FS_4_Ga,
+                  //MAG_FS_8_Ga,
+                  //MAG_FS_12_Ga,
+                  MAG_FS_16_Ga,
+                  
+                ///// Magnetometer block data updating options
+                  //MAG_BDU_DISABLE,
+                  MAG_BDU_ENABLE,
+
+                ///// Magnetometer X/Y axes output data rate
+                  //MAG_OMXY_LOW_POWER,
+                  //MAG_OMXY_MEDIUM_PERFORMANCE,
+                  MAG_OMXY_HIGH_PERFORMANCE,
+                  //MAG_OMXY_ULTRA_HIGH_PERFORMANCE,
+
+                ///// Magnetometer Z axis output data rate
+                  //MAG_OMZ_LOW_PW,
+                  //MAG_OMZ_MEDIUM_PERFORMANCE,
+                  MAG_OMZ_HIGH_PERFORMANCE,
+                  //MAG_OMZ_ULTRA_HIGH_PERFORMANCE,
+
+                ///// Magnetometer run mode
+                  MAG_MD_CONTINUOUS
+                  //MAG_MD_SINGLE
+                  //MAG_MD_POWER_DOWN_1
+                  //MAG_MD_POWER_DOWN_2
+            );
+    
+    initACC(///// Acceleration full scale
+                  ACC_FS_2g,
+                  //ACC_FS_4g,
+                  //ACC_FS_8g,
+
+                ///// Accelerometer block data updating
+                  //ACC_BDU_DISABLE,
+                  ACC_BDU_ENABLE,
+
+                ///// Enable X, Y, and/or Z axis
+                  //ACC_DISABLE_ALL,
+                  //ACC_X_ENABLE,
+                  //ACC_Y_ENABLE,
+                  //ACC_Z_ENABLE,
+                  //ACC_X_ENABLE|ACC_Y_ENABLE,
+                  //ACC_X_ENABLE|ACC_Z_ENABLE,
+                  //ACC_Y_ENABLE|ACC_Z_ENABLE,
+                  ACC_X_ENABLE|ACC_Y_ENABLE|ACC_Z_ENABLE,
+
+                ///// Accelerometer output data rate
+                  //ACC_ODR_POWER_DOWN
+                  //ACC_ODR_10_Hz
+                  //ACC_ODR_50_Hz
+                  ACC_ODR_100_Hz
+                  //ACC_ODR_200_Hz
+                  //ACC_ODR_400_Hz
+                  //ACC_ODR_800_Hz
+            );
+    return result;
+}
+
+int ACC_Status_Flags(char* val) {
+    int result = 1;
+    if(I2CReadRegister(ACC_STATUS, val, ACC_I2C_ADDR) == 1) {
+        result = 1;
+    }
+    else {
+        result = 0;
+    }
+    return result;
+}
+
+int ACC_readZ(int* data) {
+    int result = 1;
+    char data_L = 0;
+    char data_H = 0;
+    char flag_ACC_STATUS_FLAGS = ACC_ZYX_NEW_DATA_AVAILABLE;
+    
+    if(ACC_Status_Flags(&flag_ACC_STATUS_FLAGS)==1) {
+        result = 1;
+    }
+    else {
+        return 0;
+    }
+    if(flag_ACC_STATUS_FLAGS & ACC_ZYX_NEW_DATA_AVAILABLE) {
+        if(I2CReadRegister(ACC_OUT_Z_L, &data_L, ACC_I2C_ADDR) != 1) {
+            return 0;
+        }
+        if(I2CReadRegister(ACC_OUT_Z_H, &data_H, ACC_I2C_ADDR) != 1) {
+            return 0;
+        }
+        *data = (int)((data_H << 8) | data_L);
+    }
+    
+    return result;
+}
