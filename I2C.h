@@ -26,7 +26,9 @@ int ACC_BlockDataUpdate(ACC_BDU_t val);
 int ACC_EnableAxis(char val);
 int ACC_SetODR(ACC_ODR_t val);
 int initACC(ACC_FS_t afs, ACC_BDU_t abu, char aea, ACC_ODR_t aodr);
-int ACC_readZ(int* data);
+int ACC_readZ(signed short* data);
 int ACC_Status_Flags(char* val);
+int MAG_readZ(signed short* data);
+int MAG_readX(int* data);
 
 #endif

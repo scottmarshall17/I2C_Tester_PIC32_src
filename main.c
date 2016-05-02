@@ -42,7 +42,7 @@ int main(void)
     int voltageADC = 0;
     int i = 0;
     char I2Cdata = 0;
-    int magData = 0;
+    signed short magData = 0;
     int magDataOld = 0;
     char I2Ctemp = 0;
     int sum = 0;
@@ -58,7 +58,7 @@ int main(void)
     initLEDs();
     initTimers();
     initLCD();
-    initKeypad();
+    //initKeypad();
     initPWM();
     initADC();
     initI2C();
@@ -86,10 +86,11 @@ int main(void)
                 }
                 */
                 sum = 0;
-                for(i = 0; i < 2; ++i) {
-                    if(ACC_readZ(&magData) == 1) {
+                for(i = 0; i < 4; ++i) {
+                    magData = 0;
+                    if(MAG_readZ(&magData) == 1) {
                         if(1) {
-                            magDataOld = magData;
+                            magDataOld = (int)magData;
                             sum = sum + magData;
                             myState = PRINT_LCD;
                         }
@@ -98,9 +99,16 @@ int main(void)
                         }
                     } 
                 }
-                magData = sum/2;
-                magData = magData >> 8;
-                myState = PRINT_LCD;
+                magData = magData; //sum/4
+                //magData = magData >> 8;
+                //myState = PRINT_LCD;
+                if(magData < -30000) {
+                    turnOnLED(3);
+                }
+                else {
+                    turnOffLED(3);
+                }
+                myState = INIT;
                 break;
             case PRINT_LCD:
                 num = ((int)I2Ctemp)&(0x000000FF);

@@ -39,6 +39,20 @@ int I2CStart(void) {
     }
     return result;
 }
+int I2CRepeatStart() {
+    int result = 1;
+    I2CIdle();
+    I2C2CONbits.RSEN = ENABLED;
+    
+    if(I2C2STATbits.BCL) {
+        result = 0;
+    }
+    else {
+        result = 1;
+        I2CIdle();
+    }
+    return result;
+}
 int I2CStop(void) {
     int result = 1;
     char temp = 0;
@@ -60,9 +74,7 @@ int I2CStop(void) {
     return result;
 }
 int I2CWriteByte(char slaveAddr, char dataAddr, char data) {
-    int result = 1;
-    
-    return result;
+    return I2CWriteBytes(dataAddr, &data, 1, slaveAddr);
 }
 
 int I2CSendByte(char data) {
@@ -164,7 +176,8 @@ int I2CReadBytes(char regAddr, char* rxData, int len, char slaveAddr) {
     }
     
     for(j = 0; j < 100; j++) {
-        I2CStart(); //send repeat-start
+        //I2CStart(); //send repeat-start
+        I2CRepeatStart();
         I2CSendByte((slaveAddr << 1) | 1);
         if(I2C2STATbits.ACKSTAT == 0) {
             flag = 1;
@@ -448,7 +461,7 @@ int MAG_XYZ_AxDataAvailable(MAG_XYZDA_t* value) {
     return result;
 }
 
-int MAG_readZ(int* data) {
+int MAG_readZ(signed short* data) {
     int result = 1;
     char data_L = 0;
     char data_H = 0;
@@ -456,14 +469,14 @@ int MAG_readZ(int* data) {
     *data = 0;
     
     if(MAG_XYZ_AxDataAvailable(&flag)) {
-        if(flag & MAG_XYZDA_YES) {
+        if((flag & MAG_XYZDA_YES) == MAG_XYZDA_YES) {
             if(I2CReadRegister(MAG_OUTZ_L, &data_L, MAG_I2C_ADDR) != 1) {
                 return 0;
             }
             if(I2CReadRegister(MAG_OUTZ_H, &data_H, MAG_I2C_ADDR) != 1) {
                 return 0;
             }
-            *data = (int)((data_H << 8) | data_L);
+            *data = ((data_H << 8) | data_L);
         }
         else {
             return 0;
@@ -563,8 +576,8 @@ int startBreakout(void) {
                   //MAG_DO_5_Hz,
                   //MAG_DO_10_Hz,
                   //MAG_DO_20_Hz,
-                  //MAG_DO_40_Hz,
-                  MAG_DO_80_Hz,
+                  MAG_DO_40_Hz,
+                  //MAG_DO_80_Hz,
 
                 ///// Magnetic field full scale options
                   //MAG_FS_4_Ga,
@@ -579,14 +592,14 @@ int startBreakout(void) {
                 ///// Magnetometer X/Y axes output data rate
                   //MAG_OMXY_LOW_POWER,
                   //MAG_OMXY_MEDIUM_PERFORMANCE,
-                  MAG_OMXY_HIGH_PERFORMANCE,
-                  //MAG_OMXY_ULTRA_HIGH_PERFORMANCE,
+                  //MAG_OMXY_HIGH_PERFORMANCE,
+                  MAG_OMXY_ULTRA_HIGH_PERFORMANCE,
 
                 ///// Magnetometer Z axis output data rate
                   //MAG_OMZ_LOW_PW,
                   //MAG_OMZ_MEDIUM_PERFORMANCE,
-                  MAG_OMZ_HIGH_PERFORMANCE,
-                  //MAG_OMZ_ULTRA_HIGH_PERFORMANCE,
+                  //MAG_OMZ_HIGH_PERFORMANCE,
+                  MAG_OMZ_ULTRA_HIGH_PERFORMANCE,
 
                 ///// Magnetometer run mode
                   MAG_MD_CONTINUOUS
@@ -617,8 +630,8 @@ int startBreakout(void) {
                 ///// Accelerometer output data rate
                   //ACC_ODR_POWER_DOWN
                   //ACC_ODR_10_Hz
-                  //ACC_ODR_50_Hz
-                  ACC_ODR_100_Hz
+                  ACC_ODR_50_Hz
+                  //ACC_ODR_100_Hz
                   //ACC_ODR_200_Hz
                   //ACC_ODR_400_Hz
                   //ACC_ODR_800_Hz
@@ -637,11 +650,11 @@ int ACC_Status_Flags(char* val) {
     return result;
 }
 
-int ACC_readZ(int* data) {
+int ACC_readZ(signed short* data) {
     int result = 1;
     char data_L = 0;
     char data_H = 0;
-    char flag_ACC_STATUS_FLAGS = ACC_ZYX_NEW_DATA_AVAILABLE;
+    char flag_ACC_STATUS_FLAGS = ACC_Z_NEW_DATA_AVAILABLE;
     
     if(ACC_Status_Flags(&flag_ACC_STATUS_FLAGS)==1) {
         result = 1;
@@ -649,14 +662,14 @@ int ACC_readZ(int* data) {
     else {
         return 0;
     }
-    if(flag_ACC_STATUS_FLAGS & ACC_ZYX_NEW_DATA_AVAILABLE) {
+    if(flag_ACC_STATUS_FLAGS & ACC_Z_NEW_DATA_AVAILABLE) {
         if(I2CReadRegister(ACC_OUT_Z_L, &data_L, ACC_I2C_ADDR) != 1) {
             return 0;
         }
         if(I2CReadRegister(ACC_OUT_Z_H, &data_H, ACC_I2C_ADDR) != 1) {
             return 0;
         }
-        *data = (int)((data_H << 8) | data_L);
+        *data = ((data_H << 8) | data_L);
     }
     
     return result;
