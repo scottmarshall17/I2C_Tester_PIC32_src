@@ -2,6 +2,7 @@
 #include <xc.h>
 #include "I2C.h"
 #include "constants.h"
+#include "LSM303CTypes.h"
 
 
 void initI2C(void) {
@@ -138,6 +139,68 @@ int I2CReadRegister(char regAddr, char* rxData, char slaveAddr) {
     return result;
 }
 
+int I2CReadBytes(char regAddr, char* rxData, int len, char slaveAddr) {
+    int result = 1;
+    char i = 0;
+    char flag = 0;
+    char j = 0;
+    
+    for(i = 0; i < 100; ++i) {
+        I2CStart();
+        I2CSendByte((slaveAddr << 1) | 0);  //request write to slave address
+        I2CIdle();
+        if(I2C2STATbits.ACKSTAT == 0) {
+            flag = 1;
+            break;
+        }
+    }
+    if(flag != 1) {
+        return 0;
+    }
+    flag = 0;
+    I2CSendByte(regAddr);   //send address of register to read
+    if(I2C2STATbits.ACKSTAT != 0) {
+        return 0;
+    }
+    
+    for(j = 0; j < 100; j++) {
+        I2CStart(); //send repeat-start
+        I2CSendByte((slaveAddr << 1) | 1);
+        if(I2C2STATbits.ACKSTAT == 0) {
+            flag = 1;
+            break;
+        }
+    }
+    if(flag != 1) {
+        return 0;
+    }
+    flag = 0;
+    
+    //-----Below is where one byte is read from the slave device----
+    for(i = 0; i < len; ++i) {
+        I2CIdle();
+        I2C2CONbits.RCEN = ENABLED; //Enable master read
+        while(I2C2CONbits.RCEN == ENABLED);
+        I2CIdle();
+        I2C2STATbits.I2COV = DISABLED;
+        *(rxData+i) = I2C2RCV;
+
+        if((i + 1) == len) {
+            //now send NACK
+            I2C2CONbits.ACKDT = 1;
+            I2C2CONbits.ACKEN = 1;
+            I2CStop();
+        }
+        else {
+            I2C2CONbits.ACKDT = 0;  //Send ACK for sequential reads
+            I2C2CONbits.ACKEN = 1;
+        }
+    
+    }
+    
+    return result;
+}
+
 int I2CWriteBytes(char regAddr, char* txData, int len, char slaveAddr) {
     int result = 1;
     char flag = 0;
@@ -168,6 +231,178 @@ int I2CWriteBytes(char regAddr, char* txData, int len, char slaveAddr) {
         }
     }
     I2CStop();
+    
+    return result;
+}
+
+int MagSetConfigReg(char regAddr, char* txData) {
+    int result = 1;
+    char regData = 0;
+    I2C_ADDR_t magAddr = MAG_I2C_ADDR;
+    
+    if(I2CReadRegister(regAddr, &regData, magAddr) == 1) {
+        
+    }
+    
+    return result;
+}
+int MAG_SetODR(MAG_DO_t val) {
+    int result = 1;
+    char regData = 0;
+    I2C_ADDR_t magAddr = MAG_I2C_ADDR;
+    MAG_REG_t configReg = MAG_CTRL_REG1;
+    
+    if(I2CReadRegister(configReg, &regData, magAddr) == 1) {
+        regData &= ~MAG_DO_80_Hz;
+        regData |= val;
+    }
+    else {
+        return 0;
+    }
+    if(I2CWriteBytes(configReg, &regData, 1, magAddr) == 0) {
+        return 0;
+    }
+    
+    return result;
+}
+
+int MAG_SetFullScale(MAG_FS_t val) {
+    int result = 1;
+    char regData = 0;
+    I2C_ADDR_t magAddr = MAG_I2C_ADDR;
+    MAG_REG_t configReg = MAG_CTRL_REG2;
+    
+    if(I2CReadRegister(configReg, &regData, magAddr) == 1) {
+        regData &= ~MAG_FS_16_Ga;
+        regData |= val;
+    }
+    else {
+        return 0;
+    }
+    if(I2CWriteBytes(configReg, &regData, 1, magAddr) == 0) {
+        return 0;
+    }
+    
+    return result;
+}
+
+int MAG_BlockDataUpdate(MAG_BDU_t val) {
+    int result = 1;
+    char regData = 0;
+    I2C_ADDR_t magAddr = MAG_I2C_ADDR;
+    MAG_REG_t configReg = MAG_CTRL_REG5;
+    
+    if(I2CReadRegister(configReg, &regData, magAddr) == 1) {
+        regData &= ~MAG_BDU_ENABLE;
+        regData |= val;
+    }
+    else {
+        return 0;
+    }
+    if(I2CWriteBytes(configReg, &regData, 1, magAddr) == 0) {
+        return 0;
+    }
+    
+    return result;
+}
+
+int MAG_XY_AxOperativeMode(MAG_OMXY_t val) {
+    int result = 1;
+    char regData = 0;
+    I2C_ADDR_t magAddr = MAG_I2C_ADDR;
+    MAG_REG_t configReg = MAG_CTRL_REG1;
+    
+    if(I2CReadRegister(configReg, &regData, magAddr) == 1) {
+        regData &= ~MAG_OMXY_ULTRA_HIGH_PERFORMANCE;
+        regData |= val;
+    }
+    else {
+        return 0;
+    }
+    if(I2CWriteBytes(configReg, &regData, 1, magAddr) == 0) {
+        return 0;
+    }
+    
+    return result;
+}
+
+int MAG_Z_AxOperativeMode(MAG_OMZ_t val) {
+    int result = 1;
+    char regData = 0;
+    I2C_ADDR_t magAddr = MAG_I2C_ADDR;
+    MAG_REG_t configReg = MAG_CTRL_REG4;
+    
+    if(I2CReadRegister(configReg, &regData, magAddr) == 1) {
+        regData &= ~MAG_OMZ_ULTRA_HIGH_PERFORMANCE;
+        regData |= val;
+    }
+    else {
+        return 0;
+    }
+    if(I2CWriteBytes(configReg, &regData, 1, magAddr) == 0) {
+        return 0;
+    }
+    
+    return result;
+}
+
+int MAG_SetMode(MAG_MD_t val) {
+    int result = 1;
+    char regData = 0;
+    I2C_ADDR_t magAddr = MAG_I2C_ADDR;
+    MAG_REG_t configReg = MAG_CTRL_REG3;
+    
+    if(I2CReadRegister(configReg, &regData, magAddr) == 1) {
+        regData &= ~MAG_MD_POWER_DOWN_2;
+        regData |= val;
+    }
+    else {
+        return 0;
+    }
+    if(I2CWriteBytes(configReg, &regData, 1, magAddr) == 0) {
+        return 0;
+    }
+    
+    return result;
+}
+
+int MAG_TemperatureEN(MAG_TEMP_EN_t val) {
+    int result = 1;
+    char regData = 0;
+    I2C_ADDR_t magAddr = MAG_I2C_ADDR;
+    MAG_REG_t configReg = MAG_CTRL_REG1;
+    
+    if(I2CReadRegister(configReg, &regData, magAddr) == 1) {
+        regData &= ~MAG_TEMP_EN_ENABLE;
+        regData |= val;
+    }
+    else {
+        return 0;
+    }
+    if(I2CWriteBytes(configReg, &regData, 1, magAddr) == 0) {
+        return 0;
+    }
+    
+    return result;
+}
+
+int AccSetConfigReg(char regAddr, char* txData) {
+    int result = 1;
+    
+    return result;
+}
+
+int initMAG(MAG_DO_t modr, MAG_FS_t mfs,
+    MAG_BDU_t mbu, MAG_OMXY_t mxyodr, MAG_OMZ_t mzodr, MAG_MD_t mm) {
+    int result = 1;
+    
+    MAG_SetODR(modr);
+    MAG_SetFullScale(mfs);
+    MAG_BlockDataUpdate(mbu);
+    MAG_XY_AxOperativeMode(mxyodr);
+    MAG_Z_AxOperativeMode(mzodr);
+    MAG_SetMode(mm);
+    MAG_TemperatureEN(MAG_TEMP_EN_DISABLE);
     
     return result;
 }

@@ -93,9 +93,9 @@ typedef enum
 
 typedef struct
 {
-  int16_t xAxis;
-  int16_t yAxis;
-  int16_t zAxis;
+  int xAxis;
+  int yAxis;
+  int zAxis;
 } AxesRaw_t;
 
 typedef enum

@@ -21,7 +21,9 @@
 #include "ADC.h"
 #include "PWM.h"
 #include "control.h"
+#include "LSM303CTypes.h"
 #include "I2C.h"
+
 
 typedef enum state_enum {
     INIT, TOP, RIGHT, MIDDLE, LEFT, SET_DIRECTION, PRINT_LCD, FORWARD, RESUME
@@ -39,6 +41,7 @@ int main(void)
     state_t direction = FORWARD;
     int voltageADC = 0;
     char I2Cdata = 0;
+    char magData[2];
     char I2Ctemp = 0;
     int num = 0;
     int lastVoltage = 0;
@@ -56,7 +59,47 @@ int main(void)
     initPWM();
     initADC();
     initI2C();
+    initMAG(///// Magnetometer output data rate options
+                  //MAG_DO_0_625_Hz,
+                  //MAG_DO_1_25_Hz,
+                  //MAG_DO_2_5_Hz,
+                  //MAG_DO_5_Hz,
+                  //MAG_DO_10_Hz,
+                  //MAG_DO_20_Hz,
+                  MAG_DO_40_Hz,
+                  //MAG_DO_80_Hz,
+
+                ///// Magnetic field full scale options
+                  //MAG_FS_4_Ga,
+                  //MAG_FS_8_Ga,
+                  //MAG_FS_12_Ga,
+                  MAG_FS_16_Ga,
+                  
+                ///// Magnetometer block data updating options
+                  //MAG_BDU_DISABLE,
+                  MAG_BDU_ENABLE,
+
+                ///// Magnetometer X/Y axes output data rate
+                  //MAG_OMXY_LOW_POWER,
+                  //MAG_OMXY_MEDIUM_PERFORMANCE,
+                  MAG_OMXY_HIGH_PERFORMANCE,
+                  //MAG_OMXY_ULTRA_HIGH_PERFORMANCE,
+
+                ///// Magnetometer Z axis output data rate
+                  //MAG_OMZ_LOW_PW,
+                  //MAG_OMZ_MEDIUM_PERFORMANCE,
+                  MAG_OMZ_HIGH_PERFORMANCE,
+                  //MAG_OMZ_ULTRA_HIGH_PERFORMANCE,
+
+                ///// Magnetometer run mode
+                  MAG_MD_CONTINUOUS
+                  //MAG_MD_SINGLE
+                  //MAG_MD_POWER_DOWN_1
+                  //MAG_MD_POWER_DOWN_2
+            );
     
+    magData[0] = 0;
+    magData[1] = 0;
     //format 0b0000[Right][Top][Left][Middle]
     
     while(1)
@@ -64,13 +107,16 @@ int main(void)
         switch(myState) {
             case INIT:
                 if(I2CReadRegister(0x20, &I2Cdata, 0x1E) == 1) {
-                    //myState = PRINT_LCD;
+                    myState = PRINT_LCD;
+                    I2Ctemp = I2Cdata;
+                    /*
                     I2Cdata = 0b01100000;
                     if(I2CWriteBytes(0x20, &I2Cdata, 1, 0x1E) == 1) {
                         if(I2CReadRegister(0x20, &I2Ctemp, 0x1E) == 1) {
                             myState = PRINT_LCD;
                         }
                     }
+                     */                
                 }
                 else {
                     myState = INIT;
