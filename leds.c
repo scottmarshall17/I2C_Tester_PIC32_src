@@ -14,6 +14,7 @@ void initLEDs(){
     TRISGbits.TRISG12 = OUTPUT;     //set LED pins at outputs --RED
     TRISGbits.TRISG14 = OUTPUT;     //--GREEN
     TRISDbits.TRISD2 = OUTPUT;
+    TRISDbits.TRISD0 = OUTPUT;
     
     ODCGbits.ODCG12 = ENABLED;      //Enable Open-Drain Configuration
     ODCGbits.ODCG14 = ENABLED;
@@ -21,6 +22,7 @@ void initLEDs(){
     LATGbits.LATG12 = HI_Z;         //Turn off the Red LED
     LATGbits.LATG14 = LOW_Z;        //Turn on the Green LED
     LATDbits.LATD2 = DISABLED;
+    LATDbits.LATD0 = DISABLED;
 }
 
 void turnOnLED(int led) {
@@ -35,10 +37,16 @@ void turnOnLED(int led) {
     else if(led == 3) {
         LATDbits.LATD2 = ENABLED;
     }
+    else if(led == 4) {
+        LATDbits.LATD0 = ENABLED;
+    }
 }
 
 void turnOffLED(int led) {
     if(led == 3) {
         LATDbits.LATD2 = DISABLED;
+    }
+    else if(led == 4) {
+        LATDbits.LATD0 = DISABLED;
     }
 }

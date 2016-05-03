@@ -43,6 +43,7 @@ int main(void)
     int i = 0;
     char I2Cdata = 0;
     signed short magData = 0;
+    signed short accData = 0;
     int magDataOld = 0;
     char I2Ctemp = 0;
     int sum = 0;
@@ -86,7 +87,7 @@ int main(void)
                 }
                 */
                 sum = 0;
-                for(i = 0; i < 4; ++i) {
+                for(i = 0; i < 1; ++i) {
                     magData = 0;
                     if(MAG_readZ(&magData) == 1) {
                         if(1) {
@@ -99,6 +100,11 @@ int main(void)
                         }
                     } 
                 }
+                
+                if(ACC_readZ(&accData) == 1) {
+                    myState = PRINT_LCD;
+                }
+                
                 magData = magData; //sum/4
                 //magData = magData >> 8;
                 //myState = PRINT_LCD;
@@ -108,11 +114,17 @@ int main(void)
                 else {
                     turnOffLED(3);
                 }
+                if(accData < 7000) {
+                    //turnOnLED(4);
+                }
+                else {
+                    //turnOffLED(4);
+                }
                 myState = INIT;
                 break;
             case PRINT_LCD:
                 num = ((int)I2Ctemp)&(0x000000FF);
-                itoa(numberToPrint, magData, 10);
+                itoa(numberToPrint, accData, 10);
                 clearLCD();
                 delayUs(10000);
                 moveCursorLCD(0, 5);
